@@ -10,6 +10,15 @@
  */
 
 require('dotenv').config();
+// Run environment preflight validation before anything else binds a port
+try {
+  const { runPreflightChecks } = require('./src/startup/EnvironmentValidator');
+  runPreflightChecks();
+} catch (e) {
+  // If validator threw synchronously (should exit internally), log as fallback
+  console.error('Preflight validation failed early:', e.message);
+  process.exit(1);
+}
 const express = require('express');
 const path = require('path');
 const cors = require('cors');

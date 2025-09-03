@@ -12,7 +12,19 @@ const configService = require('./ConfigService');
 
 class LoggerService {
   constructor() {
-    this.config = configService.getSection('logging');
+    // During early test bootstrap or circular require edge cases, configService may not yet expose getSection.
+    let loggingConfig;
+    try {
+      if (typeof configService.getSection === 'function') {
+        loggingConfig = configService.getSection('logging');
+      }
+    } catch (_) {}
+    // Fallback minimal config to allow tests to proceed without crashing
+    this.config = loggingConfig || {
+      level: process.env.LOG_LEVEL || 'info',
+      file: { enabled: false, path: 'logs', maxSize: '10MB', maxFiles: 5 },
+      console: { enabled: true, colorize: true }
+    };
     this.logger = null;
     this.setupLogger();
   }

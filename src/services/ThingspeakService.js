@@ -26,6 +26,7 @@ class ThingspeakService {
 
   /**
    * Get latest feed data
+  * Includes stale cache fallback if upstream fails (sets stale=true and includes error context)
    */
   async getLatestFeed() {
     const cacheKey = 'thingspeak:latest';
@@ -39,9 +40,11 @@ class ThingspeakService {
       }
 
       const url = `/channels/${this.config.channelId}/feeds/last.json`;
-      const params = {
-        api_key: this.config.readApiKey
-      };
+      const params = {};
+      // Only include api_key if it looks valid (not placeholder)
+      if (this.config.readApiKey && !/^REPLACE_WITH/i.test(this.config.readApiKey)) {
+        params.api_key = this.config.readApiKey;
+      }
 
       const response = await this.axios.get(url, { params });
       
@@ -57,13 +60,33 @@ class ThingspeakService {
 
       throw new Error('No data received from ThingSpeak');
     } catch (error) {
-      this.logger.error('Failed to get latest feed', { error: error.message });
-      return { success: false, error: error.message };
+      const detail = error.response ? {
+        status: error.response.status,
+        data: error.response.data
+      } : { message: error.message };
+      let friendly = error.message;
+      if (detail.status === 400) {
+        friendly = 'ThingSpeak rejected the request (400). Verify channel ID and READ API key match and the channel is public or key has read access.';
+      } else if (detail.status === 401 || detail.status === 403) {
+        friendly = 'Unauthorized to access ThingSpeak channel. Check READ API key permissions.';
+      } else if (detail.status === 404) {
+        friendly = 'ThingSpeak channel not found. Confirm channel ID.';
+      }
+      // Attempt stale cache fallback
+      const cacheKey = 'thingspeak:latest';
+      const stale = this.cache.get(cacheKey);
+      if (stale) {
+        this.logger.warn('Using stale cached latest feed due to upstream error', { error: error.message, friendly, detail });
+        return { success: true, data: stale, cached: true, stale: true, error: friendly, detail };
+      }
+      this.logger.error('Failed to get latest feed (no stale cache available)', { error: error.message, friendly, detail });
+      return { success: false, error: friendly, detail };
     }
   }
 
   /**
    * Get channel feeds with pagination
+  * On upstream failure attempts to serve last successful cached feeds (stale=true)
    */
   async getFeeds(options = {}) {
     const {
@@ -85,16 +108,19 @@ class ThingspeakService {
       }
 
       const url = `/channels/${this.config.channelId}/feeds.json`;
-      const params = {
-        api_key: this.config.readApiKey,
-        results
-      };
-
-      // Add optional parameters
-      if (days) params.days = days;
-      if (start) params.start = start;
-      if (end) params.end = end;
-      if (offset) params.offset = offset;
+      const params = {};
+      if (results && !options.days) {
+        params.results = results;
+      }
+      if (options.days) {
+        params.days = options.days; // ThingSpeak: omit results when using days to avoid 400
+      }
+      if (options.start) params.start = options.start;
+      if (options.end) params.end = options.end;
+      if (options.offset) params.offset = options.offset;
+      if (this.config.readApiKey && !/^REPLACE_WITH/i.test(this.config.readApiKey)) {
+        params.api_key = this.config.readApiKey;
+      }
 
       const response = await this.axios.get(url, { params });
       
@@ -115,8 +141,63 @@ class ThingspeakService {
 
       throw new Error('No feeds data received from ThingSpeak');
     } catch (error) {
-      this.logger.error('Failed to get feeds', { error: error.message, options });
-      return { success: false, error: error.message };
+      // If 400 and we used days param, retry with results only as fallback (ThingSpeak quirk)
+      if (error.response && error.response.status === 400 && options.days) {
+        this.logger.warn('ThingSpeak 400 with days param, retrying with results only', { days: options.days });
+        try {
+          const retryOptions = { results: Math.min(results, 800) };
+          const retryKey = `thingspeak:feeds:retry:${JSON.stringify(retryOptions)}`;
+          const cachedRetry = this.cache.get(retryKey);
+          if (cachedRetry) {
+            return { success: true, data: cachedRetry, cached: true, fallback: true };
+          }
+          const retryUrl = `/channels/${this.config.channelId}/feeds.json`;
+          const retryParams = { results: retryOptions.results };
+          if (this.config.readApiKey && !/^REPLACE_WITH/i.test(this.config.readApiKey)) {
+            retryParams.api_key = this.config.readApiKey;
+          }
+          const retryResp = await this.axios.get(retryUrl, { params: retryParams });
+          if (retryResp.data && retryResp.data.feeds) {
+            const processedFeeds = retryResp.data.feeds.map(feed => this.processFeedData(feed));
+            const retryResult = { channel: retryResp.data.channel, feeds: processedFeeds, count: processedFeeds.length };
+            this.cache.set(retryKey, retryResult, 120);
+            this.logger.info('Fallback retrieval without days succeeded', { count: processedFeeds.length });
+            return { success: true, data: retryResult, cached: false, fallback: true };
+          }
+        } catch (retryError) {
+          this.logger.error('Fallback feed retrieval failed', { error: retryError.message });
+        }
+      }
+      const detail = error.response ? {
+        status: error.response.status,
+        data: error.response.data
+      } : { message: error.message };
+      let friendly = error.message;
+      if (detail.status === 400) {
+        friendly = 'ThingSpeak request invalid (400). Check query parameters, channel ID, or READ API key.';
+      } else if (detail.status === 401 || detail.status === 403) {
+        friendly = 'Unauthorized access to ThingSpeak channel (check READ API key).';
+      } else if (detail.status === 404) {
+        friendly = 'ThingSpeak channel not found (404).';
+      }
+      // Try stale cache fallback (any previously cached successful result for similar options)
+      const staleCandidates = Object.keys(this.cache.cache.data || {}).filter(k => k.startsWith('thingspeak:feeds:'));
+      let staleData = null;
+      if (staleCandidates.length) {
+        for (const key of staleCandidates) {
+          const val = this.cache.get(key);
+            if (val && val.feeds && val.feeds.length) {
+              staleData = val;
+              break;
+            }
+        }
+      }
+      if (staleData) {
+        this.logger.warn('Using stale cached feeds due to upstream error', { error: error.message, friendly, detail });
+        return { success: true, data: staleData, cached: true, stale: true, error: friendly, detail };
+      }
+      this.logger.error('Failed to get feeds (no stale cache available)', { error: error.message, friendly, options, detail });
+      return { success: false, error: friendly, detail };
     }
   }
 
@@ -151,8 +232,12 @@ class ThingspeakService {
 
       throw new Error('No channel data received from ThingSpeak');
     } catch (error) {
-      this.logger.error('Failed to get channel info', { error: error.message });
-      return { success: false, error: error.message };
+      const detail = error.response ? {
+        status: error.response.status,
+        data: error.response.data
+      } : { message: error.message };
+      this.logger.error('Failed to get channel info', { error: error.message, detail });
+      return { success: false, error: error.message, detail };
     }
   }
 

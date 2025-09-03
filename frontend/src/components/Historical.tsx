@@ -143,6 +143,12 @@ export const Historical = () => {
           <div className="text-center py-8">
             <div className="text-red-500 text-4xl mb-2">⚠️</div>
             <p className="text-red-600">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded shadow"
+            >
+              Retry
+            </button>
           </div>
         )}
 

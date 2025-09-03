@@ -34,7 +34,8 @@ RUN pip3 install --no-cache-dir -r requirements.txt
 # Copy backend source code
 COPY src/ ./src/
 COPY server.js ./
-COPY .env.example ./.env
+# NOTE: Do NOT bake any .env file into the image.
+# Environment configuration must be supplied at runtime via docker run -e / compose / orchestrator secrets.
 
 # Copy built frontend
 COPY --from=frontend-build /app/frontend/dist ./public

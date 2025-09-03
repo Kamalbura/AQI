@@ -54,6 +54,15 @@ router.get('/', (req, res) => {
   });
 });
 
+// Lightweight health endpoint for frontend bootstrapping
+router.get('/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
+
 /**
  * DATA ENDPOINTS
  */
@@ -291,6 +300,69 @@ router.get('/data/aqi', async (req, res) => {
 
   } catch (error) {
     loggerService.error('Failed to get AQI data', { error: error.message });
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+/**
+ * SIMPLE HEALTH ALIAS (Frontend expects /api/health)
+ */
+router.get('/health', (req, res) => {
+  res.json({
+    success: true,
+    status: 'healthy',
+    timestamp: new Date().toISOString()
+  });
+});
+
+/**
+ * HISTORICAL DATA ENDPOINT
+ * Frontend expects /api/data/historical?days=7 returning an array of simplified points
+ */
+router.get('/data/historical', async (req, res) => {
+  try {
+  const { days = 7, results = 0 } = req.query; // when days used skip results param to avoid 400
+  const parsedDays = parseInt(days) || 7;
+  const feedsResult = await thingspeakService.getFeeds({ days: parsedDays });
+
+    if (!feedsResult.success) {
+      return res.status(503).json({
+        success: false,
+        error: feedsResult.error || 'Unable to retrieve historical data',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Process feeds to enrich with AQI etc.
+    const processed = dataProcessingService.processFeeds(feedsResult.data.feeds);
+    // Map to frontend contract
+    const mapped = processed.map(p => ({
+      timestamp: p.created_at || p.timestamp,
+      pm25: p.pm25 ?? null,
+      pm10: p.pm10 ?? null,
+      temperature: p.temperature ?? null,
+      humidity: p.humidity ?? null,
+      aqi: p.epaAqi?.value ?? (p.airQuality?.overall?.aqi || 0),
+      aqiCategory: p.epaAqi?.category?.name || p.airQuality?.overall?.category?.name || null,
+      location: feedsResult.data.channel?.name || null
+    }));
+
+    res.json({
+      success: true,
+      data: mapped,
+  count: mapped.length,
+  days: parsedDays,
+      cached: feedsResult.cached,
+      timestamp: new Date().toISOString()
+    });
+
+    loggerService.info('Historical data retrieved', { count: mapped.length, days });
+  } catch (error) {
+    loggerService.error('Failed to get historical data', { error: error.message });
     res.status(500).json({
       success: false,
       error: 'Internal server error',

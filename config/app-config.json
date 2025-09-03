@@ -1,7 +1,13 @@
 {
-  "environment": "development",
-  "server": { "port": 3000, "host": "0.0.0.0", "shutdownTimeout": 10000 },
-  "thingspeak": { "channelId": "1957962", "fields": { "humidity": "field1", "temperature": "field2", "pm25": "field3", "pm10": "field4" } },
-  "cache": { "enabled": true, "ttl": 300 },
-  "logging": { "level": "info" }
+	"environment": "development",
+	"server": { "port": 3000, "host": "0.0.0.0", "shutdownTimeout": 10000 },
+	"thingspeak": {
+		"channelId": "1957962",
+		"baseUrl": "https://api.thingspeak.com",
+		"fields": { "humidity": "field1", "temperature": "field2", "pm25": "field3", "pm10": "field4" }
+	},
+	"cors": { "allowedOrigins": ["http://localhost:5173", "http://localhost:3000"] },
+	"rateLimit": { "windowMs": 900000, "max": 100 },
+	"cache": { "enabled": true, "ttl": 300 },
+	"logging": { "level": "info" }
 }

@@ -1,21 +1,11 @@
-// ----- BEGIN FILE: logger.js -----
-const LOG_LEVEL = process.env.LOG_LEVEL || 'info';
-const levels = { error: 0, warn: 1, info: 2, debug: 3 };
-const currentLevel = levels[LOG_LEVEL.toLowerCase()] ?? 2;
-
-const log = (level, message, context = {}) => {
-  if (levels[level] <= currentLevel) {
-    const timestamp = new Date().toISOString();
-    const ctx = context && Object.keys(context).length ? ' ' + JSON.stringify(context) : '';
-    // eslint-disable-next-line no-console
-    console.log(`${timestamp} [${level.toUpperCase()}]: ${message}${ctx}`);
-  }
-};
+// Backwards-compatible logger shim.
+// All legacy imports now delegate to the structured Winston-based LoggerService.
+// This prevents fragmentation while avoiding large refactors in one step.
+const loggerService = require('./src/services/LoggerService');
 
 module.exports = {
-  error: (message, context) => log('error', message, context),
-  warn: (message, context) => log('warn', message, context),
-  info: (message, context) => log('info', message, context),
-  debug: (message, context) => log('debug', message, context)
+  error: (msg, meta) => loggerService.error(msg, meta),
+  warn: (msg, meta) => loggerService.warn(msg, meta),
+  info: (msg, meta) => loggerService.info(msg, meta),
+  debug: (msg, meta) => loggerService.debug(msg, meta)
 };
-// ----- END FILE: logger.js -----

@@ -1,8 +1,8 @@
 {
   "watch": [
-    "*.js",
-    "services/",
-    "routes/",
+    "server.js",
+    "src/services/",
+    "src/routes/",
     "config/"
   ],
   "ext": "js,json",
@@ -14,5 +14,5 @@
     "data/",
     "*.md"
   ],
-  "exec": "node server-main.js"
+  "exec": "node server.js"
 }

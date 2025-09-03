@@ -7,10 +7,20 @@
 
 const fs = require('fs');
 const path = require('path');
+// Lazy logger acquisition to avoid circular dependency (LoggerService -> ConfigService -> logger shim -> LoggerService)
+// We only need logging for non-critical warnings/errors during config file IO.
+function getLogger() {
+  try {
+    return require('../../logger');
+  } catch (e) {
+    return console; // Fallback during early bootstrap or in test environment
+  }
+}
 
 class ConfigService {
   constructor() {
     this.config = null;
+  // Updated to new canonical config filename app-config.json
   this.configPath = path.join(__dirname, '../../config/app-config.json');
     this.environmentPrefix = 'AQM_';
     this.loadConfig();
@@ -32,9 +42,10 @@ class ConfigService {
 
       thingspeak: {
         baseUrl: 'https://api.thingspeak.com',
-        channelId: process.env.AQM_THINGSPEAK_CHANNEL_ID || '1957962',
-        readApiKey: process.env.AQM_THINGSPEAK_READ_API_KEY || 'HZGMXUJP74HQ35V7',
-        writeApiKey: process.env.AQM_THINGSPEAK_WRITE_API_KEY,
+        // Channel & keys intentionally start as null; env overrides must provide values.
+        channelId: process.env.AQM_THINGSPEAK_CHANNEL_ID || process.env.THINGSPEAK_CHANNEL_ID || null,
+        readApiKey: process.env.AQM_THINGSPEAK_READ_API_KEY || process.env.THINGSPEAK_READ_API_KEY || null,
+        writeApiKey: process.env.AQM_THINGSPEAK_WRITE_API_KEY || process.env.THINGSPEAK_WRITE_API_KEY || null,
         timeout: 10000,
         retryAttempts: 3,
         retryDelay: 1000,
@@ -60,9 +71,16 @@ class ConfigService {
       },
 
       cors: {
-        allowedOrigins: process.env.NODE_ENV === 'production' 
-          ? ['https://your-production-domain.com']
-          : ['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:3000']
+        allowedOrigins: (() => {
+          // Support ALLOWED_ORIGINS env (comma separated) for runtime override
+          const raw = process.env.AQM_ALLOWED_ORIGINS || process.env.ALLOWED_ORIGINS;
+          if (raw) {
+            return raw.split(',').map(o => o.trim()).filter(Boolean);
+          }
+          return process.env.NODE_ENV === 'production'
+            ? ['https://your-production-domain.com']
+            : ['http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:3000'];
+        })()
       },
 
       rateLimit: {
@@ -114,8 +132,8 @@ class ConfigService {
           keyPath: '',
           certPath: ''
         },
-        sessionSecret: process.env.SESSION_SECRET || 'your-secret-key-change-in-production',
-        jwtSecret: process.env.JWT_SECRET || 'your-jwt-secret-change-in-production',
+        sessionSecret: process.env.SESSION_SECRET || process.env.AQM_SESSION_SECRET || 'dev-session-secret',
+        jwtSecret: process.env.JWT_SECRET || process.env.AQM_JWT_SECRET || 'dev-jwt-secret',
         bcryptRounds: 12
       },
 
@@ -138,13 +156,17 @@ class ConfigService {
         const configContent = fs.readFileSync(this.configPath, 'utf8');
         fileConfig = JSON.parse(configContent);
       } catch (error) {
-        // Silent fallback to defaults; external logger not yet initialized here
+  getLogger().warn('Could not load config file', { file: this.configPath, error: error.message });
       }
     }
 
     // Merge configurations: default < file < environment
     this.config = this.mergeDeep(defaultConfig, fileConfig);
     this.applyEnvironmentOverrides();
+    // Ensure runtime NODE_ENV always takes precedence over file-config 'environment'
+    if (process.env.NODE_ENV) {
+      this.config.environment = process.env.NODE_ENV;
+    }
     this.validateConfig();
   }
 
@@ -158,6 +180,10 @@ class ConfigService {
       'AQM_THINGSPEAK_CHANNEL_ID': 'thingspeak.channelId',
       'AQM_THINGSPEAK_READ_API_KEY': 'thingspeak.readApiKey',
       'AQM_THINGSPEAK_WRITE_API_KEY': 'thingspeak.writeApiKey',
+      // Legacy variable support for backward compatibility
+      'THINGSPEAK_CHANNEL_ID': 'thingspeak.channelId',
+      'THINGSPEAK_READ_API_KEY': 'thingspeak.readApiKey',
+      'THINGSPEAK_WRITE_API_KEY': 'thingspeak.writeApiKey',
       'AQM_LOG_LEVEL': 'logging.level',
       'AQM_CACHE_TTL': 'cache.ttl',
       'AQM_RATE_LIMIT_MAX': 'rateLimit.max',
@@ -168,6 +194,12 @@ class ConfigService {
       if (process.env[envVar]) {
         this.setNestedValue(this.config, configPath, this.parseValue(process.env[envVar]));
       }
+    }
+
+    // Special handling for allowed origins array override
+    const originsRaw = process.env.AQM_ALLOWED_ORIGINS || process.env.ALLOWED_ORIGINS;
+    if (originsRaw) {
+      this.config.cors.allowedOrigins = originsRaw.split(',').map(o => o.trim()).filter(Boolean);
     }
   }
 
@@ -226,14 +258,36 @@ class ConfigService {
    */
   validateConfig() {
     const errors = [];
+    this.warnings = [];
 
     // Required configurations
+    const placeholderPattern = /^REPLACE_WITH/i;
+    const isProd = (this.config.environment === 'production');
+
     if (!this.config.thingspeak.channelId) {
       errors.push('ThingSpeak channel ID is required');
+    } else if (placeholderPattern.test(this.config.thingspeak.channelId)) {
+      errors.push('ThingSpeak channel ID contains placeholder value');
     }
 
     if (!this.config.thingspeak.readApiKey) {
-      errors.push('ThingSpeak read API key is required');
+      if (isProd) {
+        errors.push('ThingSpeak read API key is required');
+      } else {
+        this.warnings.push('ThingSpeak read API key not set; assuming public channel access (development mode)');
+      }
+    } else if (placeholderPattern.test(this.config.thingspeak.readApiKey)) {
+      errors.push('ThingSpeak read API key contains placeholder value');
+    }
+
+    if (isProd) {
+      // In production secrets must not be default dev fallbacks
+      if (!this.config.security.sessionSecret || this.config.security.sessionSecret === 'dev-session-secret') {
+        errors.push('SESSION_SECRET must be provided in production');
+      }
+      if (!this.config.security.jwtSecret || this.config.security.jwtSecret === 'dev-jwt-secret') {
+        errors.push('JWT_SECRET must be provided in production');
+      }
     }
 
     // Port validation
@@ -249,6 +303,9 @@ class ConfigService {
 
     if (errors.length > 0) {
       throw new Error(`Configuration validation failed:\n${errors.join('\n')}`);
+    }
+    if (this.warnings.length > 0) {
+      this.warnings.forEach(w => getLogger().warn(w));
     }
   }
 
@@ -309,7 +366,7 @@ class ConfigService {
       fs.writeFileSync(this.configPath, JSON.stringify(this.config, null, 2));
       return true;
     } catch (error) {
-      console.error('Failed to save configuration:', error.message);
+  getLogger().error('Failed to save configuration', { error: error.message });
       return false;
     }
   }
