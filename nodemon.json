@@ -1,0 +1,18 @@
+{
+  "watch": [
+    "*.js",
+    "services/",
+    "routes/",
+    "config/"
+  ],
+  "ext": "js,json",
+  "ignore": [
+    "node_modules/",
+    "frontend/",
+    "python/",
+    "logs/",
+    "data/",
+    "*.md"
+  ],
+  "exec": "node server-main.js"
+}

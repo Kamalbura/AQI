@@ -1,0 +1,16 @@
+# Minimal .gitignore focused only on dependency folders and build artifacts for reproducibility.
+
+# Node dependency directories
+node_modules/
+frontend/node_modules/
+
+# Build artifacts (output bundles)
+dist/
+frontend/dist/
+frontend/build/
+.vite/
+*.tsbuildinfo
+
+# (Intentionally NOT ignoring logs, data, env, coverage, etc. per request to keep almost everything tracked.)
+
+# End
