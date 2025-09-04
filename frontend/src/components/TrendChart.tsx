@@ -1,5 +1,32 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+  TimeScale,
+} from 'chart.js';
+import { Line } from 'react-chartjs-2';
+import 'chartjs-adapter-date-fns';
 import { AirQualityData } from '../context/AirQualityContext';
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+  TimeScale
+);
 
 interface TrendChartProps {
   data: AirQualityData[];
@@ -16,6 +43,8 @@ export const TrendChart = ({
   color,
   unit
 }: TrendChartProps) => {
+  const chartRef = useRef(null);
+
   if (!data || data.length === 0) {
     return (
       <div className="widget-card">
@@ -32,15 +61,94 @@ export const TrendChart = ({
     );
   }
 
+  // Prepare data for Chart.js
+  const recentData = data.slice(-24); // Last 24 readings
   const currentValue = data[data.length - 1]?.[dataKey];
   const previousValue = data[data.length - 2]?.[dataKey];
   const trend = currentValue && previousValue ? 
     Number(currentValue) - Number(previousValue) : 0;
 
-  // Simple data points for visual representation
-  const recentData = data.slice(-24); // Last 24 readings
-  const maxValue = Math.max(...recentData.map(item => Number(item[dataKey])));
-  const minValue = Math.min(...recentData.map(item => Number(item[dataKey])));
+  const chartData = {
+    labels: recentData.map(item => new Date(item.timestamp)),
+    datasets: [
+      {
+        label: `${title} (${unit})`,
+        data: recentData.map(item => Number(item[dataKey])),
+        borderColor: color,
+        backgroundColor: `${color}20`,
+        fill: true,
+        tension: 0.4,
+        pointRadius: 3,
+        pointHoverRadius: 6,
+        pointBackgroundColor: color,
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 2,
+      },
+    ],
+  };
+
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: {
+      mode: 'index' as const,
+      intersect: false,
+    },
+    scales: {
+      x: {
+        type: 'time' as const,
+        time: {
+          displayFormats: {
+            hour: 'HH:mm',
+            minute: 'HH:mm'
+          },
+          tooltipFormat: 'MMM dd, HH:mm'
+        },
+        grid: {
+          color: 'rgba(0, 0, 0, 0.05)',
+        },
+        ticks: {
+          maxTicksLimit: 8,
+          color: '#666',
+        },
+      },
+      y: {
+        beginAtZero: true,
+        grid: {
+          color: 'rgba(0, 0, 0, 0.05)',
+        },
+        ticks: {
+          color: '#666',
+          callback: function(value: any) {
+            return `${value} ${unit}`;
+          }
+        },
+      },
+    },
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleColor: '#fff',
+        bodyColor: '#fff',
+        borderColor: color,
+        borderWidth: 1,
+        cornerRadius: 8,
+        callbacks: {
+          label: function(context: any) {
+            return `${context.parsed.y} ${unit}`;
+          }
+        }
+      },
+    },
+    elements: {
+      point: {
+        hoverBackgroundColor: color,
+      },
+    },
+  };
 
   return (
     <div className="widget-card">
@@ -53,31 +161,17 @@ export const TrendChart = ({
             {currentValue} {unit}
           </div>
           {trend !== 0 && (
-            <div className={`text-sm ${trend > 0 ? 'text-red-500' : 'text-green-500'}`}>
-              {trend > 0 ? '↗' : '↘'} {Math.abs(trend).toFixed(1)}
+            <div className={`text-sm flex items-center ${trend > 0 ? 'text-red-500' : 'text-green-500'}`}>
+              <span className="mr-1">{trend > 0 ? '↗' : '↘'}</span>
+              <span>{Math.abs(trend).toFixed(1)}</span>
             </div>
           )}
         </div>
       </div>
       
-      {/* Simple trend visualization */}
-      <div className="h-64 flex items-end justify-between space-x-1 bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-        {recentData.map((item, index) => {
-          const value = Number(item[dataKey]);
-          const height = ((value - minValue) / (maxValue - minValue)) * 200 || 10;
-          return (
-            <div
-              key={index}
-              className="flex-1 min-w-0 rounded-t"
-              style={{
-                height: `${height}px`,
-                backgroundColor: color,
-                opacity: 0.7 + (index / recentData.length) * 0.3
-              }}
-              title={`${new Date(item.timestamp).toLocaleTimeString()}: ${value} ${unit}`}
-            />
-          );
-        })}
+      {/* Chart.js Line Chart */}
+      <div className="h-64 relative">
+        <Line ref={chartRef} data={chartData} options={options} />
       </div>
       
       <div className="mt-4 flex items-center justify-between text-sm text-gray-600 dark:text-gray-400">
@@ -86,8 +180,13 @@ export const TrendChart = ({
       </div>
       
       <div className="mt-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-500">
-        <span>Min: {minValue.toFixed(1)} {unit}</span>
-        <span>Max: {maxValue.toFixed(1)} {unit}</span>
+        <span>
+          Range: {Math.min(...recentData.map(item => Number(item[dataKey]))).toFixed(1)} - {Math.max(...recentData.map(item => Number(item[dataKey]))).toFixed(1)} {unit}
+        </span>
+        <span className="flex items-center">
+          <span className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: color }}></span>
+          {title}
+        </span>
       </div>
     </div>
   );

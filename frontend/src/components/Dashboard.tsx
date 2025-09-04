@@ -3,7 +3,7 @@ import { useAirQuality } from '../context/AirQualityContext';
 import { LoadingSpinner } from './LoadingSpinner';
 import { AQICard } from './AQICard';
 import { WeatherCard } from './WeatherCard';
-import { TrendChart } from './TrendChart';
+import { MultiChart } from './MultiChart';
 import { AlertsPanel } from './AlertsPanel';
 
 export const Dashboard = () => {
@@ -36,17 +36,7 @@ export const Dashboard = () => {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Header Section */}
-      <div className="text-center widget-card">
-        <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-          🌬️ Real-time Air Quality
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 text-lg">
-          Monitor air quality conditions in your area
-        </p>
-      </div>
-
+    <div className="space-y-6">
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Main AQI Card */}
@@ -62,22 +52,10 @@ export const Dashboard = () => {
       </div>
 
       {/* Charts Section */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <TrendChart
-          data={historicalData}
-          title="PM2.5 Trend"
-          dataKey="pm25"
-          color="#ef4444"
-          unit="μg/m³"
-        />
-        <TrendChart
-          data={historicalData}
-          title="AQI Trend"
-          dataKey="aqi"
-          color="#3b82f6"
-          unit="AQI"
-        />
-      </div>
+      <MultiChart
+        data={historicalData}
+        title="Air Quality Trends - Real-time Multi-pollutant Analysis"
+      />
 
       {/* Additional Info */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
