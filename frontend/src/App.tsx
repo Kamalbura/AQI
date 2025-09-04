@@ -42,7 +42,7 @@ const App = () => {
 
   if (appState.isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen hero-gradient flex items-center justify-center">
         <LoadingSpinner message="Initializing Air Quality Monitor..." />
       </div>
     );
@@ -50,8 +50,8 @@ const App = () => {
 
   if (appState.error) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center p-8">
+      <div className="min-h-screen hero-gradient flex items-center justify-center">
+        <div className="text-center p-8 widget-card max-w-md">
           <div className="text-red-600 text-6xl mb-4">⚠️</div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
             Connection Error
@@ -59,7 +59,7 @@ const App = () => {
           <p className="text-gray-600 dark:text-gray-400 mb-4">{appState.error}</p>
           <button
             onClick={() => window.location.reload()}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
+            className="btn-primary"
           >
             Retry Connection
           </button>
@@ -72,7 +72,7 @@ const App = () => {
     <ErrorBoundary>
       <AirQualityProvider>
         <Router>
-          <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+          <div className="min-h-screen hero-gradient">
             <Header />
             <main className="container mx-auto px-4 py-8">
               <Routes>

@@ -27,7 +27,7 @@ export const Dashboard = () => {
         <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
         <button
           onClick={() => window.location.reload()}
-          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded shadow"
+          className="btn-primary"
         >
           Retry
         </button>
@@ -38,11 +38,11 @@ export const Dashboard = () => {
   return (
     <div className="space-y-8">
       {/* Header Section */}
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Real-time Air Quality
+      <div className="text-center widget-card">
+        <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+          🌬️ Real-time Air Quality
         </h1>
-        <p className="text-gray-600 dark:text-gray-400">
+        <p className="text-gray-600 dark:text-gray-400 text-lg">
           Monitor air quality conditions in your area
         </p>
       </div>

@@ -3,11 +3,11 @@ import React from 'react';
 export const Settings = () => {
   return (
     <div className="space-y-8">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Settings
+      <div className="text-center widget-card">
+        <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+          ⚙️ Settings
         </h1>
-        <p className="text-gray-600 dark:text-gray-400">
+        <p className="text-gray-600 dark:text-gray-400 text-lg">
           Configure your air quality monitoring preferences
         </p>
       </div>
@@ -63,7 +63,7 @@ export const Settings = () => {
               <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
                 Temperature Unit
               </label>
-              <select className="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+              <select className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition-all hover:shadow-md">
                 <option value="celsius">Celsius (°C)</option>
                 <option value="fahrenheit">Fahrenheit (°F)</option>
               </select>
@@ -73,7 +73,7 @@ export const Settings = () => {
               <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
                 Theme
               </label>
-              <select className="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+              <select className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition-all hover:shadow-md">
                 <option value="system">System Default</option>
                 <option value="light">Light</option>
                 <option value="dark">Dark</option>
@@ -95,7 +95,7 @@ export const Settings = () => {
               <input
                 type="text"
                 placeholder="Enter location name"
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:placeholder-gray-400 transition-all hover:shadow-md"
               />
             </div>
             
@@ -126,7 +126,7 @@ export const Settings = () => {
               <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
                 Update Frequency
               </label>
-              <select className="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+              <select className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition-all hover:shadow-md">
                 <option value="1">Every minute</option>
                 <option value="5" selected>Every 5 minutes</option>
                 <option value="15">Every 15 minutes</option>
@@ -138,7 +138,7 @@ export const Settings = () => {
               <label className="block text-sm font-medium text-gray-900 dark:text-white mb-2">
                 Data Retention
               </label>
-              <select className="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+              <select className="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white transition-all hover:shadow-md">
                 <option value="7">7 days</option>
                 <option value="30" selected>30 days</option>
                 <option value="90">90 days</option>
@@ -151,10 +151,10 @@ export const Settings = () => {
 
       {/* Action Buttons */}
       <div className="flex justify-center space-x-4">
-        <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
+        <button className="btn-primary">
           Save Settings
         </button>
-        <button className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg transition-colors">
+        <button className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg transition-all hover:shadow-lg hover:-translate-y-1">
           Reset to Defaults
         </button>
       </div>

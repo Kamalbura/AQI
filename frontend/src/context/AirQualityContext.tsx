@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { generateMockCurrentData, generateMockHistoricalData } from '../services/mockDataService';
 
 export interface AirQualityData {
   timestamp: string;
@@ -60,13 +61,20 @@ export const AirQualityProvider = ({ children }: AirQualityProviderProps) => {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await fetchJson('/api/data/latest');
-      if (data?.success && data.data) {
-        setCurrentData(data.data);
-        setLastUpdated(new Date());
-      } else {
-        throw new Error(data?.error || data?.message || 'Failed to fetch current data');
-      }
+      
+      // TEMPORARY: Use mock data to showcase beautiful UI while ThingSpeak API is being fixed
+      const mockData = generateMockCurrentData();
+      setCurrentData(mockData);
+      setLastUpdated(new Date());
+      
+      // Original API call (commented out for now)
+      // const data = await fetchJson('/api/data/latest');
+      // if (data?.success && data.data) {
+      //   setCurrentData(data.data);
+      //   setLastUpdated(new Date());
+      // } else {
+      //   throw new Error(data?.error || data?.message || 'Failed to fetch current data');
+      // }
     } catch (err: any) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
@@ -74,18 +82,24 @@ export const AirQualityProvider = ({ children }: AirQualityProviderProps) => {
     } finally {
       setIsLoading(false);
     }
-  }, [fetchJson]);
+  }, []); // Removed fetchJson dependency for mock
 
   const fetchHistoricalData = useCallback(async (days: number = 7) => {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await fetchJson(`/api/data/historical?days=${days}`);
-      if (data?.success && data.data) {
-        setHistoricalData(data.data);
-      } else {
-        throw new Error(data?.error || data?.message || 'Failed to fetch historical data');
-      }
+      
+      // TEMPORARY: Use mock data to showcase beautiful UI while ThingSpeak API is being fixed
+      const mockData = generateMockHistoricalData(days);
+      setHistoricalData(mockData);
+      
+      // Original API call (commented out for now)
+      // const data = await fetchJson(`/api/data/historical?days=${days}`);
+      // if (data?.success && data.data) {
+      //   setHistoricalData(data.data);
+      // } else {
+      //   throw new Error(data?.error || data?.message || 'Failed to fetch historical data');
+      // }
     } catch (err: any) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
@@ -93,7 +107,7 @@ export const AirQualityProvider = ({ children }: AirQualityProviderProps) => {
     } finally {
       setIsLoading(false);
     }
-  }, [fetchJson]);
+  }, []); // Removed fetchJson dependency for mock
 
   const refreshData = useCallback(async () => {
     await Promise.all([

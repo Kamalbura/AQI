@@ -27,7 +27,7 @@ export const Header = () => {
   };
 
   return (
-    <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+    <header className="widget-card mx-4 mt-4 mb-0 rounded-xl">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-16">
           {/* Logo and Title */}

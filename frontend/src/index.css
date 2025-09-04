@@ -6,11 +6,6 @@
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -20,42 +15,86 @@
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #1f2937; /* Default dark text */
 }
 
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* Enhanced widget card with beautiful animations */
+.widget-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 1rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  padding: 1.5rem;
+  border: 1px solid rgba(229, 231, 235, 0.8);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  color: #1f2937;
+}
+
+.widget-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #667eea, #764ba2, #f093fb, #f5576c);
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+
+.widget-card:hover::before {
+  transform: scaleX(1);
+}
+
+.widget-card:hover {
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  transform: translateY(-4px);
+  background: rgba(255, 255, 255, 0.98);
+}
+
+/* Dark mode enhancements */
+.dark .widget-card {
+  background: rgba(31, 41, 55, 0.95);
+  backdrop-filter: blur(10px);
+}
+
+.dark .widget-card:hover {
+  background: rgba(31, 41, 55, 0.98);
 }
 
 /* Custom utility classes for air quality monitoring */
 .aqi-good {
-  @apply bg-green-100 text-green-800 border-green-200;
+  @apply bg-gradient-to-r from-green-100 to-green-50 text-green-800 border-green-200;
 }
 
 .aqi-moderate {
-  @apply bg-yellow-100 text-yellow-800 border-yellow-200;
+  @apply bg-gradient-to-r from-yellow-100 to-yellow-50 text-yellow-800 border-yellow-200;
 }
 
 .aqi-unhealthy-sensitive {
-  @apply bg-orange-100 text-orange-800 border-orange-200;
+  @apply bg-gradient-to-r from-orange-100 to-orange-50 text-orange-800 border-orange-200;
 }
 
 .aqi-unhealthy {
-  @apply bg-red-100 text-red-800 border-red-200;
+  @apply bg-gradient-to-r from-red-100 to-red-50 text-red-800 border-red-200;
 }
 
 .aqi-very-unhealthy {
-  @apply bg-purple-100 text-purple-800 border-purple-200;
+  @apply bg-gradient-to-r from-purple-100 to-purple-50 text-purple-800 border-purple-200;
 }
 
 .aqi-hazardous {
-  @apply bg-gray-800 text-gray-100 border-gray-700;
+  @apply bg-gradient-to-r from-gray-800 to-gray-700 text-gray-100 border-gray-700;
 }
 
 /* Chart animations */
@@ -72,11 +111,99 @@ body {
   @apply animate-spin rounded-full border-4 border-gray-200 border-t-blue-600;
 }
 
+/* Enhanced pulse animation for loading states */
+@keyframes shimmer {
+  0% {
+    background-position: -468px 0;
+  }
+  100% {
+    background-position: 468px 0;
+  }
+}
+
+.loading-shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 400% 100%;
+  animation: shimmer 1.2s ease-in-out infinite;
+}
+
 /* Responsive grid utilities */
 .dashboard-grid {
   @apply grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
 }
 
-.widget-card {
-  @apply bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border border-gray-200 dark:border-gray-700 transition-all duration-200 hover:shadow-lg;
+/* Beautiful gradient backgrounds for hero sections */
+.hero-gradient {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.air-quality-gradient {
+  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #5a67d8, #6b46c1);
+}
+
+/* Smooth transitions for all elements */
+* {
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Focus states for accessibility */
+button:focus,
+input:focus,
+select:focus,
+textarea:focus {
+  @apply outline-none ring-2 ring-blue-500 ring-opacity-50;
+}
+
+/* Enhanced button styles */
+.btn-primary {
+  background: linear-gradient(to right, #3b82f6, #8b5cf6);
+  color: white;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(to right, #2563eb, #7c3aed);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Status indicators with glow effects */
+.status-online {
+  color: #10b981;
+  filter: drop-shadow(0 0 3px rgba(34, 197, 94, 0.4));
+}
+
+.status-offline {
+  color: #ef4444;
+  filter: drop-shadow(0 0 3px rgba(239, 68, 68, 0.4));
+}
+
+.status-warning {
+  color: #eab308;
+  filter: drop-shadow(0 0 3px rgba(245, 158, 11, 0.4));
 }
