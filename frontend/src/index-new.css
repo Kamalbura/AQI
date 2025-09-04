@@ -1,0 +1,29 @@
+/* ==========================================================================
+   Professional Air Quality Monitor - CSS Architecture
+   Senior Developer Level Design System
+   ========================================================================== */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import Professional CSS System */
+@import './styles/variables.css';
+@import './styles/base.css';
+@import './styles/components.css';
+@import './styles/utilities.css';
+
+/* Legacy Compatibility - Will be phased out */
+.hero-gradient {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+}
+
+/* Temporary backward compatibility for existing components */
+.widget-card {
+  @apply glass-card;
+}
+
+.btn-primary {
+  @apply btn btn--primary btn--md;
+}
